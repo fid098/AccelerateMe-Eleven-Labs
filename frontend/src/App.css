@@ -1,42 +1,57 @@
-#root {
-  max-width: 1280px;
+:root {
+  --color-bg: #1b262c;
+  --color-primary: #3282b8;
+  --color-accent: #bbe1fa;
+  --color-accent-purple: #b262c0;
+  --color-text: #ffffff;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-container {
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 2rem 1rem 3rem;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+h1,
+h2,
+h3 {
+  color: var(--color-accent);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+button {
+  background-color: var(--color-primary);
+  color: var(--color-text);
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+button:hover {
+  background-color: var(--color-accent-purple);
 }
 
-.card {
-  padding: 2em;
+textarea,
+input,
+select {
+  background-color: #0f1922;
+  color: var(--color-text);
+  border: 1px solid #30475e;
+  border-radius: 4px;
+  padding: 0.4rem;
 }
 
-.read-the-docs {
-  color: #888;
+section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #0f1922;
+  border: 1px solid #30475e;
 }
