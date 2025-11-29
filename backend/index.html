@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-Perfection: Perfect Performance Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .upload-group {
+            margin-bottom: 20px;
+        }
+
+        .upload-label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 3px;
+            font-size: 13px;
+        }
+
+        .upload-subtext {
+            color: #999;
+            font-size: 11px;
+        }
+
+        .file-chip {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .controls-section {
+            display: none;
+        }
+
+        .controls-section.show {
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .control-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #f0f2ff;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #e0e0e0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-text {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .result {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result h3 {
+            color: #22543d;
+            margin-bottom: 15px;
+        }
+
+        .result audio {
+            width: 100%;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .error {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            color: #742a2a;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .error h3 {
+            margin-bottom: 10px;
+        }
+
+        .debug-info {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 11px;
+            font-family: monospace;
+            color: #333;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .debug-label {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .icon {
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 V-Perfection Perfect Performance</h1>
+        <p class="subtitle">Generate AI singing perfectly synced to your backing track</p>
+
+        <!-- BACKING TRACK SECTION -->
+        <div class="section">
+            <div class="section-title"><span class="icon">🎵</span>Backing Track (Required)</div>
+            <div class="upload-group">
+                <label class="upload-label">Upload Music/Beat File</label>
+                <div class="upload-zone" id="backingZone">
+                    <div class="upload-icon">🎵</div>
+                    <div class="upload-text">Click or drag backing track here</div>
+                    <div class="upload-subtext">MP3 or WAV (instrumental or with vocals)</div>
+                    <input type="file" id="backingInput" accept="audio/*">
+                    <div id="backingFile"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LYRICS SOURCE SECTION -->
+        <div class="section">
+            <div class="section-title"><span class="icon">📝</span>Lyrics Source (Choose One)</div>
+            
+            <div class="upload-group">
+                <label class="upload-label">Option A: Text File with Lyrics</label>
+                <div class="upload-zone" id="lyricsZone">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Click or drag lyrics text file</div>
+                    <div class="upload-subtext">TXT file with lyrics to sing</div>
+                    <input type="file" id="lyricsInput" accept=".txt,.srt">
+                    <div id="lyricsFile"></div>
+                </div>
+            </div>
+
+            <div style="text-align: center; color: #999; margin: 15px 0; font-size: 13px;">— OR —</div>
+
+            <div class="upload-group">
+                <label class="upload-label">Option B: Audio with Vocals (to extract lyrics)</label>
+                <div class="upload-zone" id="vocalZone">
+                    <div class="upload-icon">🎤</div>
+                    <div class="upload-text">Click or drag vocal audio</div>
+                    <div class="upload-subtext">Audio with singing (we'll extract lyrics)</div>
+                    <input type="file" id="vocalInput" accept="audio/*">
+                    <div id="vocalFile"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VOICE SETTINGS SECTION -->
+        <div class="section controls-section" id="controlsSection">
+            <div class="section-title"><span class="icon">⚙️</span>Voice Settings</div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Stability</span>
+                    <span class="control-value" id="stabilityValue">0.5</span>
+                </div>
+                <input type="range" id="stabilitySlider" min="0" max="1" step="0.1" value="0.5">
+                <div style="font-size: 11px; color: #999; margin-top: 5px;">Lower = more emotion, Higher = consistent</div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Voice Similarity</span>
+                    <span class="control-value" id="similarityValue">0.75</span>
+                </div>
+                <input type="range" id="similaritySlider" min="0" max="1" step="0.1" value="0.75">
+                <div style="font-size: 11px; color: #999; margin-top: 5px;">How closely it matches your cloned voice</div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Vocal Volume</span>
+                    <span class="control-value" id="vocalVolumeValue">1.0</span>
+                </div>
+                <input type="range" id="vocalVolumeSlider" min="0.1" max="2" step="0.1" value="1.0">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Background Volume</span>
+                    <span class="control-value" id="bgVolumeValue">0.7</span>
+                </div>
+                <input type="range" id="bgVolumeSlider" min="0" max="1" step="0.1" value="0.7">
+            </div>
+        </div>
+
+        <!-- GENERATE BUTTON -->
+        <div class="button-group">
+            <button id="generateBtn" disabled>✨ Generate Perfect Performance</button>
+        </div>
+
+        <!-- LOADING -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="status-text" id="loadingText">Processing your audio...</div>
+        </div>
+
+        <!-- ERROR -->
+        <div class="error" id="error">
+            <h3>❌ Error</h3>
+            <div id="errorText"></div>
+        </div>
+
+        <!-- RESULT -->
+        <div class="result" id="result">
+            <h3>✨ Your Perfect Performance</h3>
+            <audio id="resultAudio" controls></audio>
+            <button id="downloadBtn" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                ⬇️ Download Perfect_Performance.mp3
+            </button>
+        </div>
+
+        <!-- DEBUG INFO -->
+        <div class="debug-info">
+            <div class="debug-label">Debug Log:</div>
+            <div id="debugLog">Waiting for files...</div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://127.0.0.1:5000';
+
+        let selectedBacking = null;
+        let selectedLyrics = null;
+        let selectedVocal = null;
+
+        // ============= LOGGING =============
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const debugLog = document.getElementById('debugLog');
+            debugLog.innerHTML = `[${timestamp}] ${message}<br>` + debugLog.innerHTML;
+            console.log(message);
+        }
+
+        // ============= FILE HANDLERS =============
+        function setupUploadZone(zoneId, inputId, onFile) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+
+            zone.addEventListener('click', () => input.click());
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    input.files = e.dataTransfer.files;
+                    onFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            input.addEventListener('change', () => {
+                if (input.files.length > 0) {
+                    onFile(input.files[0]);
+                }
+            });
+        }
+
+        // Backing track
+        setupUploadZone('backingZone', 'backingInput', (file) => {
+            selectedBacking = file;
+            document.getElementById('backingFile').innerHTML = `<div class="file-chip">✓ ${file.name}</div>`;
+            log(`Backing track selected: ${file.name}`);
+            updateUI();
+        });
+
+        // Lyrics file
+        setupUploadZone('lyricsZone', 'lyricsInput', (file) => {
+            selectedLyrics = file;
+            selectedVocal = null;
+            document.getElementById('lyricsFile').innerHTML = `<div class="file-chip">✓ ${file.name}</div>`;
+            document.getElementById('vocalFile').innerHTML = '';
+            document.getElementById('vocalInput').value = '';
+            log(`Lyrics file selected: ${file.name}`);
+            updateUI();
+        });
+
+        // Vocal audio
+        setupUploadZone('vocalZone', 'vocalInput', (file) => {
+            selectedVocal = file;
+            selectedLyrics = null;
+            document.getElementById('vocalFile').innerHTML = `<div class="file-chip">✓ ${file.name}</div>`;
+            document.getElementById('lyricsFile').innerHTML = '';
+            document.getElementById('lyricsInput').value = '';
+            log(`Vocal audio selected: ${file.name}`);
+            updateUI();
+        });
+
+        // ============= SLIDER UPDATES =============
+        document.getElementById('stabilitySlider').addEventListener('input', (e) => {
+            document.getElementById('stabilityValue').textContent = e.target.value;
+        });
+
+        document.getElementById('similaritySlider').addEventListener('input', (e) => {
+            document.getElementById('similarityValue').textContent = e.target.value;
+        });
+
+        document.getElementById('vocalVolumeSlider').addEventListener('input', (e) => {
+            document.getElementById('vocalVolumeValue').textContent = e.target.value;
+        });
+
+        document.getElementById('bgVolumeSlider').addEventListener('input', (e) => {
+            document.getElementById('bgVolumeValue').textContent = e.target.value;
+        });
+
+        // ============= UI UPDATES =============
+        function updateUI() {
+            const backingOk = selectedBacking !== null;
+            const lyricsOk = selectedLyrics !== null || selectedVocal !== null;
+            const allOk = backingOk && lyricsOk;
+
+            document.getElementById('generateBtn').disabled = !allOk;
+            document.getElementById('controlsSection').classList.toggle('show', allOk);
+
+            if (allOk) {
+                log('✓ Ready to generate. All inputs provided.');
+            }
+        }
+
+        // ============= GENERATE =============
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            if (!selectedBacking || (!selectedLyrics && !selectedVocal)) return;
+
+            const stability = document.getElementById('stabilitySlider').value;
+            const similarity = document.getElementById('similaritySlider').value;
+            const vocalVolume = document.getElementById('vocalVolumeSlider').value;
+            const bgVolume = document.getElementById('bgVolumeSlider').value;
+
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const result = document.getElementById('result');
+
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+            document.getElementById('generateBtn').disabled = true;
+
+            log(`Starting generation...`);
+            log(`Stability: ${stability}, Similarity: ${similarity}, Vocal Vol: ${vocalVolume}, BG Vol: ${bgVolume}`);
+
+            try {
+                const formData = new FormData();
+                formData.append('backing_track', selectedBacking);
+                if (selectedLyrics) {
+                    formData.append('lyrics_file', selectedLyrics);
+                    log('Using lyrics from text file');
+                }
+                if (selectedVocal) {
+                    formData.append('vocal_audio', selectedVocal);
+                    log('Extracting lyrics from vocal audio');
+                }
+                formData.append('stability', stability);
+                formData.append('similarity', similarity);
+                formData.append('vocal_volume', vocalVolume);
+                formData.append('background_volume', bgVolume);
+
+                log(`Sending to backend...`);
+                document.getElementById('loadingText').textContent = 'Processing your audio...';
+
+                const response = await fetch(`${BACKEND_URL}/create-perfect-performance`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`Response status: ${response.status}`);
+
+                if (!response.ok) {
+                    let errorMsg = `Server error: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) {
+                        const text = await response.text();
+                        errorMsg = text || errorMsg;
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                const audioBlob = await response.blob();
+                log(`✓ Received audio: ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB`);
+
+                const audioUrl = URL.createObjectURL(audioBlob);
+                document.getElementById('resultAudio').src = audioUrl;
+
+                document.getElementById('downloadBtn').onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = audioUrl;
+                    a.download = 'Perfect_Performance.mp3';
+                    a.click();
+                    log('Downloaded: Perfect_Performance.mp3');
+                };
+
+                result.classList.add('show');
+                log('✓ Generation complete!');
+
+            } catch (err) {
+                log(`✗ Error: ${err.message}`);
+                document.getElementById('errorText').textContent = err.message;
+                error.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+                document.getElementById('generateBtn').disabled = false;
+            }
+        });
+
+        log('Frontend loaded. Ready for input.');
+    </script>
+</body>
+</html>
