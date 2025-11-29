@@ -25,10 +25,9 @@ export default function SongCreatorStudio() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  // NOTE: Placeholder for API Key. In a real application, use a secure backend.
-  const API_KEY = ""; 
-  const GEMINI_MODEL = "gemini-2.5-flash-preview-tts";
-  const TTS_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`;
+  // Backend base URL for Flask API
+  const API_BASE_URL = 'http://localhost:5000/api';
+  const BACKEND_BASE_URL = 'http://localhost:5000';
 
   const fileInputRef = useRef(null);
   const audioInputRef = useRef(null);
@@ -53,124 +52,7 @@ export default function SongCreatorStudio() {
   const genres = ['Pop', 'Rock', 'Hip-Hop', 'Jazz', 'Electronic', 'Country', 'R&B', 'Classical', 'Indie', 'Metal'];
   const moods = ['Upbeat', 'Melancholic', 'Energetic', 'Calm', 'Romantic', 'Dark', 'Playful', 'Epic'];
 
-  // --- TTS Helper Functions ---
-
-  const base64ToArrayBuffer = (base64) => {
-    const binaryString = window.atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  };
-
-  const pcmToWav = (pcm16, sampleRate) => {
-    const buffer = new ArrayBuffer(44 + pcm16.length * 2);
-    const view = new DataView(buffer);
-    
-    // RIFF identifier
-    writeString(view, 0, 'RIFF');
-    // file length
-    view.setUint32(4, 36 + pcm16.length * 2, true);
-    // RIFF type
-    writeString(view, 8, 'WAVE');
-    // format chunk identifier
-    writeString(view, 12, 'fmt ');
-    // format chunk length
-    view.setUint32(16, 16, true);
-    // sample format (1 = PCM)
-    view.setUint16(20, 1, true);
-    // channel count
-    view.setUint16(22, 1, true);
-    // sample rate
-    view.setUint32(24, sampleRate, true);
-    // byte rate (sample rate * block align)
-    view.setUint32(28, sampleRate * 2, true);
-    // block align (channels * bytes per sample)
-    view.setUint16(32, 2, true);
-    // bits per sample
-    view.setUint16(34, 16, true);
-    // data chunk identifier
-    writeString(view, 36, 'data');
-    // data chunk length
-    view.setUint32(40, pcm16.length * 2, true);
-    
-    // Write PCM data
-    for (let i = 0; i < pcm16.length; i++) {
-      view.setInt16(44 + i * 2, pcm16[i], true);
-    }
-    
-    return new Blob([view], { type: 'audio/wav' });
-  };
-
-  const writeString = (view, offset, string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
-    }
-  };
-
-  // --- API Call Implementation (Simulated TTS Voice Generation) ---
-
-  const generateAudioTrack = async (voiceName, text, maxRetries = 5) => {
-    const payload = {
-      contents: [{
-        parts: [{ text: `Sing this lyric: "${text}"` }]
-      }],
-      generationConfig: {
-        responseModalities: ["AUDIO"],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voiceName }
-          }
-        }
-      },
-      model: GEMINI_MODEL
-    };
-
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        const response = await fetch(TTS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`API returned status ${response.status}`);
-        }
-
-        const result = await response.json();
-        const part = result?.candidates?.[0]?.content?.parts?.[0];
-        const audioData = part?.inlineData?.data;
-        const mimeType = part?.inlineData?.mimeType;
-
-        if (audioData && mimeType && mimeType.startsWith("audio/L16")) {
-          const sampleRateMatch = mimeType.match(/rate=(\d+)/);
-          const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 16000;
-          
-          const pcmData = base64ToArrayBuffer(audioData);
-          const pcm16 = new Int16Array(pcmData);
-          
-          const wavBlob = pcmToWav(pcm16, sampleRate);
-          const url = URL.createObjectURL(wavBlob);
-          
-          return { audioUrl: url, sampleRate };
-        } else {
-            throw new Error("Invalid audio response structure from API.");
-        }
-
-      } catch (error) {
-        console.error(`Attempt ${i + 1} failed:`, error);
-        if (i < maxRetries - 1) {
-          const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
-        } else {
-          throw new Error("Failed to generate audio after multiple retries.");
-        }
-      }
-    }
-  };
+  // --- Backend integration (Flask + ElevenLabs) ---
 
   // --- Event Handlers ---
   
@@ -258,71 +140,74 @@ export default function SongCreatorStudio() {
     setIsGenerating(true);
     setAudioUrl(null); // Reset previous audio
 
-    const selectedVoice = voices.find(v => v.id === voiceOption);
-    const voiceName = selectedVoice?.voiceName || 'Kore';
-    const textToSynthesize = lyrics.trim() || "The melody begins now.";
-
-    let finalAudioUrl = null;
-
-    // 1. Voice Track Generation (using TTS structure)
-    // NOTE: If API_KEY is empty, this call will fail, and a mock URL will be used.
     try {
-        const audioResult = await generateAudioTrack(voiceName, textToSynthesize);
-        if (audioResult) {
-            finalAudioUrl = audioResult.audioUrl;
-            setAudioUrl(finalAudioUrl);
-            console.log("TTS Audio generated and prepared for playback.");
-        }
-    } catch (e) {
-        console.error("Error during live voice generation:", e);
-        // Fallback/Mock: Use a simple mock URL if API fails or key is missing
-        finalAudioUrl = 'https://placehold.co/100x20/1B262C/BBE1FA?text=NoAudio+Fallback';
-        setAudioUrl(finalAudioUrl);
-    }
+      const payload = {
+        lyrics,
+        voiceOption,
+        instrumentalOption,
+        genre,
+        mood,
+        tempo,
+        hasRecording,
+      };
 
-    // 2. Simulate Instrumental/Mastering (existing simulation)
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Finalizing the song structure
-    setGeneratedSong({
-      title: 'Quantum Lullaby',
-      duration: '3:45',
-      url: '#', // The actual audio is in audioUrl state
-      timestamp: new Date().toISOString()
-    });
-    
-    setIsGenerating(false);
-    setStep(5);
+      const res = await fetch(`${API_BASE_URL}/generate-song`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Backend error: ${res.status} ${text}`);
+      }
+
+      const song = await res.json();
+      const backendAudioUrl = song.audioUrl
+        ? `${BACKEND_BASE_URL}${song.audioUrl}`
+        : null;
+
+      setGeneratedSong(song);
+      setAudioUrl(backendAudioUrl);
+      setStep(5);
+    } catch (e) {
+      console.error('Error generating song via backend:', e);
+      setAudioUrl('error');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const regenerateSong = async () => {
+    if (!generatedSong) return;
+
     setIsGenerating(true);
-    
-    // Simulate API call with feedback
-    await new Promise(resolve => setTimeout(resolve, 2500));
 
-    // Re-run voice generation with feedback
-    const selectedVoice = voices.find(v => v.id === voiceOption);
-    const voiceName = selectedVoice?.voiceName || 'Kore';
-    const textToSynthesize = feedback.trim() ? `${lyrics.trim()} (Rework based on feedback: ${feedback})` : lyrics.trim();
-    
     try {
-        const audioResult = await generateAudioTrack(voiceName, textToSynthesize);
-        if (audioResult) {
-            setAudioUrl(audioResult.audioUrl);
-        }
-    } catch (e) {
-        console.error("Error during live voice regeneration:", e);
-    }
+      const res = await fetch(`${API_BASE_URL}/songs/${generatedSong.id}/improve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback }),
+      });
 
-    setGeneratedSong({
-      ...generatedSong,
-      timestamp: new Date().toISOString(),
-      version: (generatedSong.version || 1) + 1
-    });
-    
-    setIsGenerating(false);
-    setFeedback('');
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Backend error: ${res.status} ${text}`);
+      }
+
+      const song = await res.json();
+      const backendAudioUrl = song.audioUrl
+        ? `${BACKEND_BASE_URL}${song.audioUrl}`
+        : audioUrl;
+
+      setGeneratedSong(song);
+      setAudioUrl(backendAudioUrl);
+      setFeedback('');
+    } catch (e) {
+      console.error('Error improving song via backend:', e);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Helper functions for button styling and content
@@ -777,10 +662,16 @@ export default function SongCreatorStudio() {
                   <div className="bg-gradient-to-r from-[#BBE1FA] to-[#3282B8] h-3 rounded-full w-2/3 transition-all duration-1000"></div>
                 </div>
 
-                <button className="w-full py-5 bg-gradient-to-r from-[#3282B8] to-[#14A9FF] hover:from-[#14A9FF] hover:to-[#3282B8] rounded-xl font-bold text-xl text-white shadow-xl transition-all flex items-center justify-center gap-3 cursor-pointer">
+                <a
+                  href={audioUrl || '#'}
+                  download={audioUrl ? 'song.mp3' : undefined}
+                  className={`w-full py-5 bg-gradient-to-r from-[#3282B8] to-[#14A9FF] hover:from-[#14A9FF] hover:to-[#3282B8] rounded-xl font-bold text-xl text-white shadow-xl transition-all flex items-center justify-center gap-3 cursor-pointer ${
+                    !audioUrl ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                >
                   <Download className="w-6 h-6" />
-                  Download Song (WAV/MP3)
-                </button>
+                  Download Song (MP3)
+                </a>
               </div>
 
               <div className="bg-[#1B262C]/50 rounded-xl p-6 space-y-4 border border-[#3282B8]/50 shadow-lg">
